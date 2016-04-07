@@ -1,0 +1,97 @@
+#!/bin/sh
+
+export DBUS_SERVICE=org.mpris.MediaPlayer2.spotify
+export DBUS_PATH=/
+if [ "x$SPOTIFY_LOGFILE" = "x" ]; then
+  export SPOTIFY_LOGFILE=/dev/null
+fi
+
+. $(dirname "$0")/mpris.sh
+
+if [ "x$SPOTICTL_NO_AUTOSTART" = "x" ] && ! mpris_is_running >/dev/null 2>&1; then
+  spotify >>"$SPOTIFY_LOGFILE" 2>&1 &
+fi
+
+# Interactive mode - because we can :D
+if [ "x$1" = "x-i" ]; then
+  echo "Interactive mode. Quit with ^C"
+  while true; do
+    read command
+    if [ "x$command" != "x" ] && [ "x$command" != "x-i" ]; then
+      "$0" $command
+    fi
+  done
+fi
+
+case "$1" in
+  play)
+    mpris_play
+    ;;
+  pause)
+    mpris_pause
+    ;;
+  togglepause|playpause)
+    mpris_togglepause
+    ;;
+  next)
+    mpris_next
+    ;;
+  previous|prev)
+    mpris_previous
+    ;;
+  quit)
+    mpris_quit
+    ;;
+
+  play_uri|open_uri)
+    mpris_play_uri "$2"
+    ;;
+
+  running|is_running)
+    mpris_is_running
+    ;;
+  playback_status)
+    mpris_playback_status
+    ;;
+  track_metadata|get_track_metadata)
+    mpris_track_metadata
+    ;;
+  track_metadata_field|get_track_metadata_field)
+    mpris_track_metadata_field "$2"
+    ;;
+
+  meta_trackid)
+    mpris_track_metadata_field mpris:trackid:
+    ;;
+  meta_length)
+    length=$(mpris_track_metadata_field mpris:length:)
+    echo $((length/1000000))
+    ;;
+  meta_arturl)
+    mpris_track_metadata_field mpris:artUrl:
+    ;;
+  meta_album)
+    mpris_track_metadata_field xesam:album:
+    ;;
+  meta_artist)
+    mpris_track_metadata_field xesam:artist:
+    ;;
+  meta_discNumber)
+    mpris_track_metadata_field xesam:discNumber:
+    ;;
+  meta_title)
+    mpris_track_metadata_field xesam:title:
+    ;;
+  meta_trackNumber)
+    mpris_track_metadata_field xesam:trackNumber:
+    ;;
+
+  mpris_command)
+    shift 1
+    mpris_command "$@"
+    ;;
+
+  *)
+    echo "Unknown command"  # TODO: Usage
+    ;;
+esac
